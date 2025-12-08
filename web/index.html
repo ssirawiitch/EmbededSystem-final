@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🌿 Smart Plant Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="main-container">
+    <header>
+      <h1>🌿 Smart Plant</h1>
+      <p class="subtitle">แดชบอร์ดติดตามสถานะพืชแบบเรียลไทม์</p>
+    </header>
+
+    <div class="status-bar">
+      <div class="connection-status">
+        <span class="dot" id="connDot"></span>
+        <span id="connText">Connecting...</span>
+      </div>
+      <button id="refreshBtn" class="refresh-btn">
+        🔄 Refresh
+      </button>
+    </div>
+
+    <div class="sensor-grid">
+      <div id="soil" class="sensor-card">
+        <div class="icon">💧</div>
+        <div class="info">
+          <div class="label">ความชื้นในดิน</div>
+          <div class="value">--</div>
+          <div class="status">รอข้อมูล...</div>
+        </div>
+      </div>
+
+      <div id="light" class="sensor-card">
+        <div class="icon">☀️</div>
+        <div class="info">
+          <div class="label">ความเข้มแสง</div>
+          <div class="value">--</div>
+          <div class="status">รอข้อมูล...</div>
+        </div>
+      </div>
+
+      <div id="temp" class="sensor-card">
+        <div class="icon">🌡</div>
+        <div class="info">
+          <div class="label">อุณหภูมิ</div>
+          <div class="value">-- °C</div>
+          <div class="status">รอข้อมูล...</div>
+        </div>
+      </div>
+
+      <div id="humi" class="sensor-card">
+        <div class="icon">💦</div>
+        <div class="info">
+          <div class="label">ความชื้นอากาศ</div>
+          <div class="value">-- %</div>
+          <div class="status">รอข้อมูล...</div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p id="updated">อัปเดตล่าสุด: --</p>
+      <p class="copyright">© 2025 Smart Plant Project</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
