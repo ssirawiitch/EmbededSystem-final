@@ -26,6 +26,7 @@
 | 3 | **Soil Moisture Sensor (Module 43)** | วัดค่าความชื้นในดิน |
 | 4 | **Photoresistor Module (Module 16)** | ตรวจระดับแสงรอบต้นไม้ |
 | 5 | **Jumper wires + Breadboard** | สำหรับการต่อวงจร |
+| 6 | **Temperature & Humidity Sensor (Module 13)** | วัดอุณหภูมิและความชื้นของอากาศ |
 <!-- | 5 | **Temperature & Humidity Sensor (Module 13)** | วัดอุณหภูมิและความชื้นของอากาศ |
 | 6 | **5V Relay Module (Module 17)** | เปิด/ปิดปั๊มน้ำอัตโนมัติ |
 | 7 | **Water Pump** | ใช้รดน้ำต้นไม้ | -->
