@@ -52,9 +52,8 @@ h1 { color: var(--primary); margin: 0; font-size: 28px; font-weight: 600; }
 /* Sensor Grid */
 .sensor-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* บังคับ 2 คอลัมน์เลยเพราะเหลือแค่ 2 อัน */
+  grid-template-columns: 1fr 1fr;
   gap: 15px;
-  margin-bottom: 25px;
 }
 
 .sensor-card {
@@ -71,45 +70,6 @@ h1 { color: var(--primary); margin: 0; font-size: 28px; font-weight: 600; }
 .label { font-size: 13px; color: var(--text-sub); margin-bottom: 4px; }
 .value { font-size: 20px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
 .status { font-size: 11px; padding: 4px 8px; background: #f1f5f9; border-radius: 6px; color: var(--text-sub); }
-
-/* --- Control Panel (ส่วนใหม่) --- */
-.control-panel {
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
-  text-align: center;
-  box-shadow: var(--shadow);
-}
-.control-panel h3 { margin: 0 0 15px 0; font-size: 16px; color: var(--text-main); }
-
-.button-group {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-bottom: 10px;
-}
-
-.ctrl-btn {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  border-radius: 10px;
-  font-family: inherit;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.2s;
-  color: white;
-}
-.ctrl-btn:active { transform: scale(0.95); }
-
-/* สีปุ่มต่างๆ */
-.btn-on { background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%); box-shadow: 0 4px 10px rgba(34, 197, 94, 0.3); }
-.btn-off { background: linear-gradient(135deg, #f87171 0%, #ef4444 100%); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); }
-.btn-auto { background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); }
-
-.control-status { font-size: 13px; color: var(--text-sub); margin: 0; }
 
 /* Footer */
 footer { margin-top: 30px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #e2e8f0; padding-top: 15px; }

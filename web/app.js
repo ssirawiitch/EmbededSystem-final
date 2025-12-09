@@ -1,9 +1,13 @@
 const PROJECT_ID = "smart-plant-care-system-179aa"; 
 const API_URL = `https://smart-plant-care-system-179aa-default-rtdb.asia-southeast1.firebasedatabase.app/Sensor.json`;
 
-// เกณฑ์แจ้งเตือน
-const SOIL_DRY_THRESHOLD = 2500; 
-const LIGHT_OK_THRESHOLD = 1000; 
+// --- ตั้งค่าการคำนวณ % ดิน ---
+// ปกติ ESP32 อ่านค่า Analog ได้ 0-4095
+// ค่า 4095 = แห้งสนิท (0%)
+// ค่า 0    = เปียกสนิท (100%)
+const SOIL_MAX_DRY = 4095; // ค่าตอนแห้งสุด (เปลี่ยนตัวเลขนี้ถ้าเซนเซอร์คุณค่าสูงสุดไม่ใช่ 4095)
+const SOIL_MIN_WET = 0;    // ค่าตอนเปียกสุด
+
 const REFRESH_MS = 5000;
 
 // Elements
@@ -12,32 +16,17 @@ const connDot = document.getElementById("connDot");
 const connText = document.getElementById("connText");
 const updatedEl = document.getElementById("updated");
 
-// ปุ่มควบคุมใหม่
-const btnOn = document.getElementById("btnOn");
-const btnOff = document.getElementById("btnOff");
-const btnAuto = document.getElementById("btnAuto");
-const controlStatus = document.getElementById("controlStatus");
+function calculateSoilPercent(rawValue) {
 
-// --- จัดการปุ่มกด (ตัวอย่าง: แค่แสดงสถานะหน้าเว็บ) ---
-// *ถ้าต้องการให้ส่งค่ากลับไป Firebase ต้องเขียน PUT method เพิ่มตรงนี้*
-btnOn.addEventListener("click", () => {
-    console.log("Command: ON");
-    controlStatus.innerText = "สถานะปัจจุบัน: 🟢 เปิดทำงาน";
-    // ใส่โค้ดส่งค่าไป Firebase ตรงนี้ได้
-});
+  let percent = ((SOIL_MAX_DRY - rawValue) / (SOIL_MAX_DRY - SOIL_MIN_WET)) * 100;
+  
+  // บังคับค่าให้อยู่ในช่วง 0-100 (เผื่อค่า sensor แกว่งเกินขอบ)
+  if (percent < 0) percent = 0;
+  if (percent > 100) percent = 100;
+  
+  return Math.round(percent); 
+}
 
-btnOff.addEventListener("click", () => {
-    console.log("Command: OFF");
-    controlStatus.innerText = "สถานะปัจจุบัน: 🔴 ปิดการทำงาน";
-});
-
-btnAuto.addEventListener("click", () => {
-    console.log("Command: AUTO");
-    controlStatus.innerText = "สถานะปัจจุบัน: 🔵 โหมด Auto";
-});
-
-
-// ฟังก์ชันเปลี่ยนสีสถานะ
 function setBadge(state){
   if(state === "ok"){
     connDot.style.backgroundColor = "#22c55e"; 
@@ -92,27 +81,51 @@ async function fetchData() {
       return;
     }
 
-    // --- ดึงค่า (เหลือแค่ Soil กับ Light) ---
-    const soil = data.Soil;
+    const soilRaw = data.Soil;
     const light = data.Light;
 
-    // 1. ดิน (Soil)
+    // --- 1. คำนวณ % ดิน ---
+    let soilDisplay = "-- %";
     let soilStatus = "รอข้อมูล";
-    if (soil !== undefined) {
-      soilStatus = soil > SOIL_DRY_THRESHOLD ? "💧 ดินแห้ง (ปั๊มทำงาน)" : "🌱 ดินชุ่มชื้น";
+
+    if (soilRaw !== undefined) {
+      const percent = calculateSoilPercent(soilRaw);
+      soilDisplay = `${percent} %`;
+      
+      // เกณฑ์บอกสถานะจาก %
+       if(percent==0){
+        soilStatus = "🌵 รอข้อมูล";
+      }
+      else if (percent < 30) {
+        soilStatus = "💧 ดินแห้ง รดน้ำด่วน";
+      } else if (percent > 80) {
+        soilStatus = "💦 แฉะเกินไป";
+      } 
+      else if (percent<40){
+        soilStatus = "🌿 ขาดน้ำนิดหน่อย";
+      }
+      else {
+        soilStatus = "🌱 ชุ่มชื้นกำลังดี";
+      }
     }
 
-    // 2. แสง (Light)
     let lightStatus = "รอข้อมูล";
-    if (light !== undefined) {
-       lightStatus = light > LIGHT_OK_THRESHOLD ? "🌤 แสงพอ" : "🌑 แสงน้อย";
+  if (light !== undefined) {
+       if (light < 300) {
+           lightStatus = "🌑 มืดเกินไป สังเคราะห์แสงไม่ได้";
+       } else if (light >= 300 && light < 900) {
+           lightStatus = "☁️ แสงเหมาะกับไม้ในร่ม";
+       } else if (light >= 900 && light < 3000) {
+           lightStatus = "🌤 แสงเพียงพอ";
+       } else {
+           lightStatus = "☀️ แดดแรงเกินไป อาจทำให้ใบไหม้";
+       }
     }
 
     // --- อัปเดตหน้าจอ ---
-    updateCard("soil", soil ?? "--", soilStatus);
+    updateCard("soil", soilDisplay, soilStatus);
     updateCard("light", light ?? "--", lightStatus);
 
-    // เวลาปัจจุบัน
     const now = new Date();
     updatedEl.innerText = "อัปเดตล่าสุด: " + now.toLocaleTimeString("th-TH");
 
