@@ -62,76 +62,6 @@ static void MX_USART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-// --- DHT11 Helper Functions ---
-// --- DHT11 Open Drain Driver (ไม่ต้องสลับขา) ---
-
-// ฟังก์ชันหน่วงเวลา (ปรับจูนสำหรับ 16MHz แล้ว)
-// --- ฟังก์ชันหน่วงเวลา (จูนสำหรับ Clock 16MHz) ---
-void delay_us(uint32_t us) {
-    // ตัวคูณ 12 นี้จูนมาสำหรับ 16MHz ถ้าอ่านเพี้ยนให้ลองปรับเลขนี้ (เช่น 8 - 15)
-    volatile uint32_t count = us * 12;
-    while(count--);
-}
-
-// --- ฟังก์ชันอ่าน DHT11 (Open Drain Mode) ---
-// Return 1 = สำเร็จ, 0 = ไม่สำเร็จ
-uint8_t DHT11_Read(int *temp, int *humid) {
-    uint8_t i, j, data[5] = {0};
-    uint32_t wait_count = 0;
-
-    // 1. ส่งสัญญาณ Start (ดึง Low 20ms)
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
-    HAL_Delay(20);
-    // ปล่อย High (เพื่อให้ Pull-up ดึงกลับเป็น 3.3V)
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
-    delay_us(30);
-
-    // 2. เช็คการตอบรับ (Sensor ต้องดึง Low)
-    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_SET) return 0; // Err: ไม่ตอบรับ
-
-    // รอจนกว่าจะปล่อย High (Low -> High)
-    wait_count = 0;
-    while (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_RESET) {
-        wait_count++;
-        if (wait_count > 60000) return 0; // Err: Timeout Low
-    }
-
-    // รอจนกว่าจะดึง Low อีกรอบเพื่อเริ่มส่งข้อมูล (High -> Low)
-    wait_count = 0;
-    while (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_SET) {
-        wait_count++;
-        if (wait_count > 60000) return 0; // Err: Timeout High
-    }
-
-    // 3. อ่านข้อมูล 40 bits
-    __disable_irq(); // ปิด Interrupt ชั่วคราวเพื่อความแม่น
-    for (j = 0; j < 5; j++) {
-        for (i = 0; i < 8; i++) {
-            // รอ Low นำหน้า
-            while (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_RESET);
-
-            // จับเวลาตอนเป็น High
-            delay_us(40); // จุดวัดใจ: ถ้า 0 ไฟจะดับแล้ว, ถ้า 1 ไฟยังติด
-
-            if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_RESET) {
-                data[j] = data[j] << 1; // เป็น 0
-            } else {
-                data[j] = (data[j] << 1) | 1; // เป็น 1
-                // รอจนกว่าจะจบ High
-                while (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_SET);
-            }
-        }
-    }
-    __enable_irq(); // เปิด Interrupt คืน
-
-    // 4. ตรวจสอบความถูกต้อง (Checksum)
-    if ((data[0] + data[1] + data[2] + data[3]) == data[4]) {
-        *humid = data[0];
-        *temp = data[2];
-        return 1; // อ่านสำเร็จ
-    }
-    return 0; // Checksum ผิด
-}
 
 // --- ฟังก์ชันอ่าน ADC (LDR / Soil) ---
 uint32_t Read_ADC(uint32_t channel) {
@@ -186,7 +116,7 @@ int main(void)
   DWT->CYCCNT = 0;
   DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 
-  int temp = 0, humid = 0;
+//  int temp = 0, humid = 0;
     int soil_val = 0, light_val = 0;
     char uart_buffer[64]; // ตัวแปรสำหรับแพ็คข้อความ
   /* USER CODE END 2 */
@@ -195,39 +125,29 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  // 1. อ่านค่า DHT11
-	      if (DHT11_Read(&temp, &humid)) {
-	          // อ่านสำเร็จ (ไม่ต้องทำอะไร ค่าอยู่ในตัวแปร temp, humid แล้ว)
-	      } else {
-	          // อ่านไม่สำเร็จ (ให้ใส่ค่าเดิม หรือ -1 เพื่อบอกว่า Error)
-	           temp = -1; humid = -1;
-	      }
 
-	      // 2. อ่านค่า LDR (ต่อขา PA0 -> Channel 0)
 	      light_val = Read_ADC(ADC_CHANNEL_0);
-
-	      // 3. อ่านค่าความชื้นดิน (สมมติว่าต่อ PA4 -> Channel 4)
-	      // *ถ้าคุณยังไม่ได้ต่อ ให้ comment บรรทัดนี้ทิ้ง หรือแก้เป็น Channel ที่ใช้จริง*
 	      soil_val = Read_ADC(ADC_CHANNEL_4);
-	      int THRESHOLD = 2500;
+	      int THRESHOLD = 2458; // 40%
+	      	  if (soil_val < 4080){
+	      		if (soil_val > THRESHOLD) {
+	      			              // ถ้าดินแห้งกว่ากำหนด -> เปิดปั๊ม
+	      			              HAL_GPIO_WritePin(RELAY_PUMP_GPIO_Port, RELAY_PUMP_Pin, GPIO_PIN_SET);
+	      			          } else {
+	      			              // ถ้าดินชุ่มแล้ว -> ปิดปั๊ม
+	      			              HAL_GPIO_WritePin(RELAY_PUMP_GPIO_Port, RELAY_PUMP_Pin, GPIO_PIN_RESET);
+	      			          }
+	      	  }else{
+	      		HAL_GPIO_WritePin(RELAY_PUMP_GPIO_Port, RELAY_PUMP_Pin, GPIO_PIN_RESET);
+	      	  }
 
-	          if (soil_val > THRESHOLD) {
-	              // ถ้าดินแห้งกว่ากำหนด -> เปิดปั๊ม
-	              // (RELAY_PUMP_GPIO_Port กับ Pin จะถูกสร้างอัตโนมัติถ้าตั้งชื่อใน IOC)
-	              HAL_GPIO_WritePin(RELAY_PUMP_GPIO_Port, RELAY_PUMP_Pin, GPIO_PIN_SET);
-	          } else {
-	              // ถ้าดินชุ่มแล้ว -> ปิดปั๊ม
-	              HAL_GPIO_WritePin(RELAY_PUMP_GPIO_Port, RELAY_PUMP_Pin, GPIO_PIN_RESET);
-	          }
 
-	      // 4. สร้างข้อความ S...L...T...H...E
-	      // รูปแบบ: S{ดิน}L{แสง}T{อุณหภูมิ}H{ความชื้น}E
-	      sprintf(uart_buffer, "S%dL%dT%dH%dE\n", soil_val, light_val, temp, humid);
 
-	      // 5. ส่งไป ESP32 ทาง UART1
+	      //S {ดิน}L{แสง}E
+	      sprintf(uart_buffer, "S%dL%dE\n", soil_val, light_val);
+
 	      HAL_UART_Transmit(&huart1, (uint8_t*)uart_buffer, strlen(uart_buffer), 100);
 
-	      // หน่วงเวลา 2 วินาที (DHT11 ห้ามอ่านถี่เกินไป)
 	      HAL_Delay(2000);
     /* USER CODE END WHILE */
 

@@ -5,16 +5,18 @@
 // ---------------------------------------------------------------------------
 // 1. ตั้งค่า Wi-Fi และ Firebase
 // ---------------------------------------------------------------------------
-#define WIFI_SSID "ROOM_704_2.4G"       
-#define WIFI_PASSWORD "wavesun1669"         
+#define WIFI_SSID "WaveiPhone"       
+#define WIFI_PASSWORD "13572468"         
 
-// API Key จาก Project Settings -> General -> Web API Key
+// API Key 
 #define API_KEY "AIzaSyBfU9wKJUiAk5QEV4Wp-7sp3sHznY_Ut_o" 
 
-
+// URL จาก Realtime Database 
 #define DATABASE_URL "smart-plant-care-system-179aa-default-rtdb.asia-southeast1.firebasedatabase.app" 
 
-
+// ---------------------------------------------------------------------------
+// 2. ตั้งค่าขา UART
+// ---------------------------------------------------------------------------
 #define RX_PIN 17   
 #define TX_PIN 18   
 #define BAUDRATE 9600 
@@ -24,7 +26,7 @@ FirebaseAuth auth;
 FirebaseConfig config;
 bool signupOK = false;
 
-// ฟังก์ชันแจ้งเตือนสถานะ Token 
+// ฟังก์ชันแจ้งเตือนสถานะ Token (ช่วยให้เชื่อมต่อเสถียรขึ้น)
 void tokenStatusCallback(TokenInfo info){
     if (info.status == token_status_ready){
         Serial.println("Token: Ready");
@@ -52,10 +54,10 @@ void setup() {
   config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
 
- 
+  // ลดขนาด Buffer ของ SSL ลง เพื่อประหยัดแรม (แก้ Error mConnectSSL)
   fbdo.setBSSLBufferSize(1024, 1024); 
   
- 
+  // เพิ่มการตอบสนองเพื่อให้รู้ว่า Token พร้อมไหม
   config.token_status_callback = tokenStatusCallback; 
 
   // ลงชื่อเข้าใช้
@@ -79,14 +81,14 @@ void loop() {
     Serial.println(data);
 
     if (data.startsWith("S") && data.endsWith("E") && signupOK) {
-      
+      // เช็คว่า Firebase พร้อมใช้งานไหม (และ Token ไม่หมดอายุ)
       if (Firebase.ready()) {
-          int soil, light, temp, humid;
-          if (sscanf(data.c_str(), "S%dL%dT%dH%dE", &soil, &light, &temp, &humid) == 4) {
+          int soil, light;
+          if (sscanf(data.c_str(), "S%dL%dE", &soil, &light) == 2) {
             
             Serial.println("Sending to Firebase...");
 
-            
+            // ส่งค่าทีละตัว (ใช้ setInt จะเสถียรกว่า setFloat สำหรับ ESP32 รุ่นเก่า)
             if (Firebase.RTDB.setInt(&fbdo, "/Sensor/Soil", soil)) {
                 Serial.println(" > Soil OK");
             } else {
@@ -94,8 +96,7 @@ void loop() {
             }
             
             if (Firebase.RTDB.setInt(&fbdo, "/Sensor/Light", light)) Serial.println(" > Light OK");
-            if (Firebase.RTDB.setInt(&fbdo, "/Sensor/Temp", temp)) Serial.println(" > Temp OK");
-            if (Firebase.RTDB.setInt(&fbdo, "/Sensor/Humid", humid)) Serial.println(" > Humid OK");
+            
             
           } else {
             Serial.println("Error: Parse Fail");
